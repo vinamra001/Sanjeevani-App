@@ -1,0 +1,12 @@
+# Ignore the Python Virtual Environment
+Sanjeevani/env/
+Sanjeevani/venv/
+
+# Ignore Node modules
+Sanjeevani_Frontend/node_modules/
+Sanjeevani_Frontend/.expo/
+
+# Ignore local DB and cache
+Sanjeevani/db.sqlite3
+Sanjeevani/__pycache__/
+.DS_Store
