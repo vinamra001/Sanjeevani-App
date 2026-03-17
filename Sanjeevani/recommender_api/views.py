@@ -92,14 +92,12 @@ class ChatBotView(APIView):
             if username:
                 profile = UserProfile.objects.get(user__username=username)
                 user_context = f"User: {username}, Age: {profile.age}, Dosha: {profile.prakriti or 'General'}."
-        except: pass
+        except Exception:
+            pass
 
         try:
-            # ✅ STABILITY PATCH: Forcing stable v1 endpoint
-            client = genai.Client(
-                api_key=settings.GEMINI_API_KEY,
-                http_options={'api_version': 'v1'}
-            )
+            # ✅ THE FIX: Let the SDK handle routing naturally, no strict v1 dict
+            client = genai.Client(api_key=settings.GEMINI_API_KEY)
             
             system_instruction = (
                 f"You are Sanjeevani AI, an expert Ayurvedic health consultant. {user_context} "
@@ -107,17 +105,18 @@ class ChatBotView(APIView):
                 "Keep responses structured with bullet points and end with a medical disclaimer."
             )
 
-            # ✅ MULTI-MODEL STACK: Tries the 2026 stable Flash first, then legacy names
+            # ✅ MULTI-MODEL STACK: Tries stable -latest aliases to bypass registry errors
             try:
-                # Primary model for speed and efficiency
+                # Primary model
                 response = client.models.generate_content(
                     model='gemini-2.5-flash', 
                     contents=f"{system_instruction}\n\nUser Question: {user_query}"
                 )
-            except:
-                # Reliable fallback to stable 1.5
+            except Exception as inner_e:
+                print(f"DEBUG - Primary Model Failed: {str(inner_e)}")
+                # Reliable fallback to the flash-latest alias
                 response = client.models.generate_content(
-                    model='gemini-1.5-flash', 
+                    model='gemini-1.5-flash-latest', 
                     contents=f"{system_instruction}\n\nUser Question: {user_query}"
                 )
             
@@ -165,7 +164,8 @@ class PredictionView(APIView):
                     confidence=top['confidence'], dosha_at_time=profile.prakriti,
                     input_symptoms=", ".join(symptom_names)
                 )
-            except Exception as e: print(f"Logging Error: {e}")
+            except Exception as e:
+                print(f"Logging Error: {e}")
 
         return Response({"predictions": predictions})
 
@@ -179,7 +179,8 @@ class DiseaseDetailView(APIView):
         try:
             disease = Disease.objects.get(pk=pk)
             return Response(DiseaseSerializer(disease).data, status=status.HTTP_200_OK)
-        except: return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception:
+            return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
 
 # --- PERSONALIZED PLANS ---
 class GetAyurvedicPlanView(APIView):
@@ -187,15 +188,18 @@ class GetAyurvedicPlanView(APIView):
         username, plan_type = request.query_params.get('username'), request.query_params.get('type', 'diet')
         try:
             profile = UserProfile.objects.get(user__username=username)
-            # Use forced stable v1
-            client = genai.Client(api_key=settings.GEMINI_API_KEY, http_options={'api_version': 'v1'})
+            
+            # ✅ THE FIX: Removed hardcoded v1 here as well
+            client = genai.Client(api_key=settings.GEMINI_API_KEY)
             
             prompt = f"Create a detailed Ayurvedic {plan_type} for a person with {profile.prakriti or 'General'} prakriti."
             
-            # Using the stable 2.5 identifier
-            response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
+            # Using the stable -latest identifier
+            response = client.models.generate_content(model='gemini-1.5-flash-latest', contents=prompt)
             return Response({"dosha": profile.prakriti, "plan": response.text}, status=status.HTTP_200_OK)
-        except: return Response({"error": "Plan generation failed"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(f"DEBUG - Plan Generation Error: {str(e)}")
+            return Response({"error": "Plan generation failed"}, status=status.HTTP_404_NOT_FOUND)
 
 # --- ADMIN ANALYTICS ---
 class AdminStatsView(APIView):

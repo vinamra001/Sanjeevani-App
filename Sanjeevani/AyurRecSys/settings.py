@@ -74,7 +74,7 @@ DATABASES = {
 
 # 6. AI CONFIGURATION (Gemini)
 # We will use the hardcoded key for now to ensure the chatbot is "Online"
-GEMINI_API_KEY = 'AIzaSyBVCsIpx0bNbHaGWpxz7eRNTDTBDrSWBfk'
+GEMINI_API_KEY = 'AIzaSyCBmm5Qtx1CC5DnhE0s3bx4Kp3soAuuUwg'
 
 # 7. OTHER DEFAULTS
 AUTH_PASSWORD_VALIDATORS = [
