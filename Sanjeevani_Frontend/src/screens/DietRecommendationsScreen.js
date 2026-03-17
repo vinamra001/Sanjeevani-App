@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import BottomNavBar from '../components/BottomNavBar'; // ✅ Import global navbar
 
 const { width } = Dimensions.get('window');
 const THEME_COLOR = '#2D7D46';
@@ -104,7 +105,9 @@ const DietRecommendationsScreen = ({ navigation }) => {
     }
   }), []);
 
-  const currentDiet = diets[profile.prakriti] || diets.General;
+  // Make sure we select a valid diet profile, default to General if undefined
+  const currentDietProfile = profile?.prakriti && diets[profile.prakriti] ? profile.prakriti : 'General';
+  const currentDiet = diets[currentDietProfile];
 
   if (loading) {
     return (
@@ -138,7 +141,7 @@ const DietRecommendationsScreen = ({ navigation }) => {
           <Text style={styles.doshaLabel}>Personalized for {profile.username}</Text>
           <View style={styles.doshaRow}>
             <Text style={styles.doshaIcon}>{currentDiet.icon}</Text>
-            <Text style={styles.doshaValue}>{profile.prakriti || 'General'}</Text>
+            <Text style={styles.doshaValue}>{currentDietProfile}</Text>
           </View>
         </View>
 
@@ -171,8 +174,7 @@ const DietRecommendationsScreen = ({ navigation }) => {
         </View>
 
         <Text style={styles.mainSectionTitle}>Suggested Meals</Text>
-
-        <MealCard title="BREAKFAST" items={currentDiet.meals.breakfast} />
+                <MealCard title="BREAKFAST" items={currentDiet.meals.breakfast} />
         <MealCard title="LUNCH" items={currentDiet.meals.lunch} />
         <MealCard title="DINNER" items={currentDiet.meals.dinner} />
 
@@ -191,8 +193,12 @@ const DietRecommendationsScreen = ({ navigation }) => {
           </View>
         </View>
 
-        <View style={{ height: 40 }} />
+        {/* ✅ Increased padding to prevent overlap with the bottom navigation bar */}
+        <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* ✅ Add the global Bottom Nav Bar here */}
+      <BottomNavBar navigation={navigation} activeScreen="" />
     </View>
   );
 };

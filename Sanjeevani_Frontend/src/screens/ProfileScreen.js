@@ -8,6 +8,7 @@ import axios from 'axios';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { translations } from '../utils/translations';
+import BottomNavBar from '../components/BottomNavBar'; // ✅ Import global navbar
 
 const { width } = Dimensions.get('window');
 const THEME_COLOR = '#2D7D46';
@@ -88,7 +89,7 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     Alert.alert(
       lang === 'hi' ? "लॉगआउट" : "Logout",
       lang === 'hi' ? "क्या आप बाहर निकलना चाहते हैं?" : "Exit Sanjeevani?",
@@ -121,9 +122,6 @@ const ProfileScreen = ({ navigation }) => {
           <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t.profile}</Text>
-        <TouchableOpacity onPress={toggleLanguage} style={styles.langBadge}>
-          <Text style={styles.langText}>{lang === 'en' ? 'हिन्दी' : 'EN'}</Text>
-        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -166,15 +164,13 @@ const ProfileScreen = ({ navigation }) => {
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
 
+        {/* ✅ Increased padding to ensure the logout button isn't hidden behind the navbar */}
         <View style={{ height: 120 }} />
       </ScrollView>
 
-      <View style={styles.bottomNav}>
-        <NavItem icon="🏠" label="Home" onPress={() => navigation.navigate('Home')} />
-        <NavItem icon="📋" label="Blogs" onPress={() => navigation.navigate('Blog')} />
-        <NavItem icon="💬" label="Chat" onPress={() => navigation.navigate('Chat')} />
-        <NavItem icon="👤" label="Profile" active />
-      </View>
+      {/* ✅ Add the global Bottom Nav Bar here */}
+      <BottomNavBar navigation={navigation} activeScreen="Profile" />
+
     </View>
   );
 };
@@ -187,13 +183,6 @@ const ProfileInfoCard = ({ label, value, icon }) => (
       <Text style={styles.infoValue}>{value}</Text>
     </View>
   </View>
-);
-
-const NavItem = ({ icon, label, onPress, active }) => (
-  <TouchableOpacity style={styles.navItem} onPress={onPress}>
-    <Text style={[styles.navIconText, active && { color: THEME_COLOR }]}>{icon}</Text>
-    <Text style={[styles.navLabel, active && { color: THEME_COLOR, fontWeight: 'bold' }]}>{label}</Text>
-  </TouchableOpacity>
 );
 
 const styles = StyleSheet.create({
@@ -228,10 +217,6 @@ const styles = StyleSheet.create({
   arrow: { color: THEME_COLOR, fontWeight: 'bold' },
   logoutButton: { marginTop: 30, padding: 16, borderRadius: 15, borderWidth: 1.5, borderColor: '#FF5252', alignItems: 'center' },
   logoutText: { color: '#FF5252', fontWeight: 'bold' },
-  bottomNav: { position: 'absolute', bottom: 0, width: width, height: 85, backgroundColor: '#FFF', flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#EEE', paddingBottom: 20 },
-  navItem: { alignItems: 'center', flex: 1, justifyContent: 'center' },
-  navIconText: { fontSize: 24, color: '#AAA' },
-  navLabel: { fontSize: 10, color: '#AAA', marginTop: 4 }
 });
 
 export default ProfileScreen;

@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   StatusBar, Dimensions, Modal, Platform
 } from 'react-native';
+import BottomNavBar from '../components/BottomNavBar'; // ✅ Import the global navbar
 
 const { width } = Dimensions.get('window');
 const THEME_COLOR = '#2D7D46';
@@ -30,13 +31,6 @@ const BLOG_POSTS = [
 
 const BlogScreen = ({ navigation }) => {
   const [selectedPost, setSelectedPost] = useState(null);
-
-  const NavItem = ({ icon, label, active, onPress }) => (
-    <TouchableOpacity style={styles.navItem} onPress={onPress}>
-      <Text style={[styles.navIcon, active && { color: THEME_COLOR }]}>{icon}</Text>
-      <Text style={[styles.navLabel, active && { color: THEME_COLOR, fontWeight: 'bold' }]}>{label}</Text>
-    </TouchableOpacity>
-  );
 
   return (
     <View style={styles.container}>
@@ -78,7 +72,8 @@ const BlogScreen = ({ navigation }) => {
             </View>
           </TouchableOpacity>
         ))}
-        <View style={{ height: 100 }} />
+        {/* ✅ Increased padding to ensure the last blog card isn't hidden behind the navbar */}
+        <View style={{ height: 120 }} />
       </ScrollView>
 
       {/* --- DYNAMIC POST MODAL --- */}
@@ -130,13 +125,9 @@ const BlogScreen = ({ navigation }) => {
         </View>
       </Modal>
 
-      {/* BOTTOM NAV */}
-      <View style={styles.bottomNav}>
-        <NavItem icon="🏠" label="Home" onPress={() => navigation.navigate('Home')} />
-        <NavItem icon="📋" label="Blogs" active />
-        <NavItem icon="💬" label="Chat" onPress={() => navigation.navigate('Chat')} />
-        <NavItem icon="👤" label="Profile" onPress={() => navigation.navigate('Profile')} />
-      </View>
+      {/* ✅ Add the global Bottom Nav Bar here */}
+      <BottomNavBar navigation={navigation} activeScreen="Blog" />
+
     </View>
   );
 };
@@ -192,18 +183,10 @@ const styles = StyleSheet.create({
   modalAuthor: { color: '#666', fontWeight: '600', fontSize: 15 },
   modalTime: { color: '#999', fontSize: 14 },
   contentDivider: { height: 4, backgroundColor: THEME_COLOR, width: 50, marginVertical: 25, borderRadius: 2 },
-  diagramPlaceholder: { marginVertical: 10, padding: 10, backgroundColor: '#F8FAF8', borderRadius: 15 },
+  diagramPlaceholder: { marginVertical: 10, padding: 10, backgroundColor: '#F8FAF8', borderRadius: 15, alignItems: 'center' },
   fullContentText: { fontSize: 17, color: '#333', lineHeight: 28, fontWeight: '400' },
   footerInfoBox: { marginTop: 40, padding: 20, backgroundColor: '#F1F8E9', borderRadius: 15 },
   infoBoxText: { color: '#4D7C59', fontSize: 13, textAlign: 'center', fontWeight: '500' },
-
-  bottomNav: {
-    position: 'absolute', bottom: 0, width: width, height: 85,
-    backgroundColor: '#FFF', flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#EEE', paddingBottom: 20
-  },
-  navItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  navIcon: { fontSize: 24, color: '#AAA' },
-  navLabel: { fontSize: 10, color: '#AAA', marginTop: 4 },
 });
 
 export default BlogScreen;

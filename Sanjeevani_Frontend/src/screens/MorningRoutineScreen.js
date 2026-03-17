@@ -6,6 +6,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { translations } from '../utils/translations';
+import BottomNavBar from '../components/BottomNavBar'; // ✅ Import global navbar
 
 const { width } = Dimensions.get('window');
 const THEME_COLOR = '#2D7D46';
@@ -15,6 +16,7 @@ const MorningRoutineScreen = ({ navigation }) => {
   const [lang, setLang] = useState('en');
   const [profile, setProfile] = useState({ username: '', prakriti: '' });
   const [checkedTasks, setCheckedTasks] = useState({});
+  const [isGuestMode, setIsGuestMode] = useState(false); // ✅ Guest mode state
 
   useEffect(() => {
     fetchInitialData();
@@ -25,10 +27,17 @@ const MorningRoutineScreen = ({ navigation }) => {
       const username = await AsyncStorage.getItem('userName');
       const savedLang = await AsyncStorage.getItem('userLang') || 'en';
       const savedProgress = await AsyncStorage.getItem(`routine_progress_${username}`);
+      const guestFlag = await AsyncStorage.getItem('isGuest');
 
       setLang(savedLang);
+      if (guestFlag === 'true') setIsGuestMode(true);
 
-      // ✅ FIXED: Changed 10.21.69.216 to 10.0.2.2 for Android Emulator stability
+      if (!username) {
+        navigation.replace('Login');
+        return;
+      }
+
+      // ✅ FIXED: Using 10.0.2.2 for Android Emulator stability
       const response = await axios.get(`http://10.0.2.2:8000/api/v1/get-profile/?username=${username}`, {
         timeout: 10000
       });
@@ -38,7 +47,6 @@ const MorningRoutineScreen = ({ navigation }) => {
       if (savedProgress) setCheckedTasks(JSON.parse(savedProgress));
     } catch (e) {
       console.error("Routine Init Error:", e);
-      // Fallback: If network fails, try to use stored username to keep UI functional
       const storedName = await AsyncStorage.getItem('userName');
       setProfile(prev => ({ ...prev, username: storedName || 'User' }));
     } finally {
@@ -77,7 +85,6 @@ const MorningRoutineScreen = ({ navigation }) => {
     const isKapha = profile.prakriti === 'Kapha';
     const t = translations[lang];
 
-    // These tasks adjust based on the user's Dosha fetched from your Django Backend
     return [
       { id: 'wake', t: isKapha ? '5:00 AM' : '6:00 AM', a: t.routine_wake, b: t.desc_wake },
       { id: 'water', t: '6:15 AM', a: t.routine_water, b: isPitta ? t.desc_water_pitta : t.desc_water_gen },
@@ -127,14 +134,16 @@ const MorningRoutineScreen = ({ navigation }) => {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
-        {/* Intro Card showing Prakriti-based Dinacharya */}
         <View style={styles.introCard}>
           <Text style={styles.introEmoji}>🌅</Text>
           <View style={{ flex: 1 }}>
             <Text style={styles.introTitle}>
                {profile.prakriti ? `${profile.prakriti} ` : ''}{t.dinacharya}
             </Text>
-            <Text style={styles.introSubtitle}>{t.custom_for} {profile.username}</Text>
+            {/* ✅ Dynamic subtitle for Guest/Family mode */}
+            <Text style={styles.introSubtitle}>
+                {isGuestMode ? "Viewing plan for family member" : `${t.custom_for} ${profile.username}`}
+            </Text>
           </View>
         </View>
 
@@ -170,8 +179,12 @@ const MorningRoutineScreen = ({ navigation }) => {
           <Text style={styles.disclaimerBody}>{t.disclaimer_body}</Text>
         </View>
 
-        <View style={{ height: 40 }} />
+        {/* ✅ Extra space for navbar */}
+        <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* ✅ Added the global Bottom Nav Bar */}
+      <BottomNavBar navigation={navigation} activeScreen={isGuestMode ? "Family" : ""} />
     </View>
   );
 };
@@ -201,7 +214,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.4)'
   },
   langToggle: { color: '#FFF', fontWeight: 'bold', fontSize: 12 },
-  content: { padding: 20 },
+  content: { padding: 20, paddingBottom: 100 }, // ✅ Added paddingBottom
   introCard: {
     flexDirection: 'row',
     backgroundColor: '#FFF',

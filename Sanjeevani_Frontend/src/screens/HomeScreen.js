@@ -6,6 +6,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { translations } from '../utils/translations';
+import BottomNavBar from '../components/BottomNavBar'; // ✅ Import the new global navbar
 
 const { width } = Dimensions.get('window');
 const THEME_COLOR = '#2D7D46';
@@ -19,6 +20,9 @@ const HomeScreen = ({ navigation }) => {
 
   const fetchUserData = async () => {
     try {
+      // ✅ Every time we load the home screen, make sure we are NOT in guest mode anymore
+      await AsyncStorage.removeItem('isGuest');
+
       const name = await AsyncStorage.getItem('userName');
       const savedLang = await AsyncStorage.getItem('userLang') || 'en';
       const savedHistory = await AsyncStorage.getItem('last_diagnosis');
@@ -32,9 +36,8 @@ const HomeScreen = ({ navigation }) => {
       if (name) {
         setDisplayName(name);
 
-        // ✅ FIXED: Changed 10.21.69.216 to 10.0.2.2 for Android Emulator
         const response = await axios.get(`http://10.0.2.2:8000/api/v1/get-profile/?username=${name}`, {
-          timeout: 8000 // Increased timeout slightly for slower emulators
+          timeout: 8000
         });
 
         if (response.data.prakriti && response.data.prakriti !== "Not Analyzed") {
@@ -43,7 +46,6 @@ const HomeScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error("Home Data Fetch Error:", error);
-      // Fallback: If network fails, at least the app doesn't stay stuck on loading
     } finally {
       setLoading(false);
     }
@@ -151,20 +153,16 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </View>
 
-        <View style={{height: 120}} />
+        {/* ✅ Padding to ensure content isn't hidden behind the floating navbar */}
+        <View style={{height: 100}} />
       </ScrollView>
 
-      <View style={styles.bottomNav}>
-        <NavItem icon="🏠" label="Home" active />
-        <NavItem icon="📋" label="Blogs" onPress={() => navigation.navigate('Blog')} />
-        <NavItem icon="💬" label={t.chat} onPress={() => navigation.navigate('Chat')} />
-        <NavItem icon="👤" label={t.profile} onPress={() => navigation.navigate('Profile')} />
-      </View>
+      {/* ✅ Use the global component instead of hardcoding the navbar */}
+      <BottomNavBar navigation={navigation} activeScreen="Home" />
+
     </View>
   );
 };
-
-// ... (Rest of ActionCard, NavItem components and Styles remain the same)
 
 const ActionCard = ({ icon, label, color, onPress }) => (
   <TouchableOpacity style={[styles.actionCard, styles.shadow]} onPress={onPress}>
@@ -172,13 +170,6 @@ const ActionCard = ({ icon, label, color, onPress }) => (
       <Text style={{ fontSize: 24 }}>{icon}</Text>
     </View>
     <Text style={styles.actionLabel} numberOfLines={1}>{label}</Text>
-  </TouchableOpacity>
-);
-
-const NavItem = ({ icon, label, active, onPress }) => (
-  <TouchableOpacity style={styles.navItem} onPress={onPress}>
-    <Text style={{ fontSize: 22, color: active ? THEME_COLOR : '#9E9E9E' }}>{icon}</Text>
-    <Text style={[styles.navText, active && { color: THEME_COLOR, fontWeight: 'bold' }]}>{label}</Text>
   </TouchableOpacity>
 );
 
@@ -210,10 +201,7 @@ const styles = StyleSheet.create({
   gridRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
   actionCard: { width: width * 0.43, backgroundColor: '#fff', borderRadius: 18, paddingVertical: 22, alignItems: 'center', borderWidth: 1, borderColor: '#F0F0F0' },
   actionIconCircle: { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
-  actionLabel: { fontSize: 13, fontWeight: 'bold', textAlign: 'center', color: '#444', paddingHorizontal: 5 },
-  bottomNav: { position: 'absolute', bottom: 0, width: width, height: 85, backgroundColor: '#fff', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#EEE', paddingBottom: Platform.OS === 'ios' ? 25 : 15 },
-  navItem: { alignItems: 'center', flex: 1 },
-  navText: { fontSize: 10, marginTop: 4, color: '#9E9E9E' }
+  actionLabel: { fontSize: 13, fontWeight: 'bold', textAlign: 'center', color: '#444', paddingHorizontal: 5 }
 });
 
 export default HomeScreen;

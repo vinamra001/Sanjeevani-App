@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
   Dimensions,
   Platform
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import BottomNavBar from '../components/BottomNavBar'; // ✅ Import the global navbar
 
 const { width } = Dimensions.get('window');
 const THEME_COLOR = '#2D7D46';
@@ -18,6 +20,18 @@ const THEME_COLOR = '#2D7D46';
 const AyurvedicRemediesScreen = ({ route, navigation }) => {
   // Destructuring remedies and disease name from navigation params
   const { remedies = [], diseaseName = 'Natural Remedies' } = route.params || {};
+  const [isGuestMode, setIsGuestMode] = useState(false);
+
+  // ✅ Check if the user entered via the Family (Guest) button
+  useEffect(() => {
+    const checkGuestStatus = async () => {
+      const guestFlag = await AsyncStorage.getItem('isGuest');
+      if (guestFlag === 'true') {
+        setIsGuestMode(true);
+      }
+    };
+    checkGuestStatus();
+  }, []);
 
   const handleShare = async (remedy) => {
     try {
@@ -119,8 +133,11 @@ const AyurvedicRemediesScreen = ({ route, navigation }) => {
             </Text>
         </View>
 
-        <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* ✅ Add the global Bottom Nav Bar here */}
+      <BottomNavBar navigation={navigation} activeScreen={isGuestMode ? "Family" : ""} />
+
     </View>
   );
 };
@@ -141,7 +158,10 @@ const styles = StyleSheet.create({
   backArrow: { color: '#FFF', fontSize: 30, fontWeight: 'bold' },
   headerTitle: { color: '#FFF', fontSize: 18, fontWeight: 'bold', flex: 1, textAlign: 'center' },
   infoIcon: { fontSize: 22, color: '#FFF', paddingHorizontal: 5 },
-  scrollContent: { padding: 15 },
+
+  // ✅ Increased paddingBottom to 100 so the disclaimer isn't hidden behind the navbar
+  scrollContent: { padding: 15, paddingBottom: 100 },
+
   prakritiBanner: {
     backgroundColor: '#E8F5E9',
     padding: 15,

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,17 +9,30 @@ import {
   Dimensions,
   Platform
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import BottomNavBar from '../components/BottomNavBar'; // ✅ Import the global navbar
 
 const { width } = Dimensions.get('window');
 const THEME_COLOR = '#2D7D46';
 
 const AboutScreen = ({ navigation }) => {
+  const [isGuestMode, setIsGuestMode] = useState(false);
+
+  // ✅ Check for Guest Mode to keep navigation consistent
+  useEffect(() => {
+    const checkGuestStatus = async () => {
+      const guestFlag = await AsyncStorage.getItem('isGuest');
+      if (guestFlag === 'true') {
+        setIsGuestMode(true);
+      }
+    };
+    checkGuestStatus();
+  }, []);
+
   return (
     <View style={styles.container}>
-      {/* 1. SEAMLESS STATUS BAR */}
       <StatusBar barStyle="light-content" backgroundColor={THEME_COLOR} />
 
-      {/* 2. SOLID GREEN HEADER SECTION */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -35,7 +48,6 @@ const AboutScreen = ({ navigation }) => {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-        {/* 3. PROJECT VISION */}
         <View style={styles.section}>
           <View style={styles.logoCircle}>
             <Text style={styles.logoEmoji}>🌿</Text>
@@ -50,7 +62,6 @@ const AboutScreen = ({ navigation }) => {
           </Text>
         </View>
 
-        {/* 4. CORE ARCHITECTURE */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Core Features</Text>
           <BulletPoint text="Prakriti Analysis: Real-time assessment of Vata, Pitta, and Kapha balance." />
@@ -59,20 +70,19 @@ const AboutScreen = ({ navigation }) => {
           <BulletPoint text="Digital Dinacharya: Lifestyle routines tailored to your body clock." />
         </View>
 
-        {/* 5. TECHNICAL STACK */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Technical Stack</Text>
+          {/*  */}
           <View style={styles.techGrid}>
             <TechTag label="React Native" />
             <TechTag label="Django REST" />
             <TechTag label="Google Gemini" />
-            <TechTag label="SQLite3" />
+            <TechTag label="MongoDB" />
             <TechTag label="Axios" />
             <TechTag label="Expo Print" />
           </View>
         </View>
 
-        {/* 6. MEDICAL DISCLAIMER */}
         <View style={styles.disclaimerCard}>
           <View style={styles.disclaimerHeader}>
             <Text style={styles.disclaimerEmoji}>⚠️</Text>
@@ -92,13 +102,15 @@ const AboutScreen = ({ navigation }) => {
           <Text style={styles.footerText}>Built with ❤️ by Team Sanjeevani</Text>
         </View>
 
-        <View style={{ height: 40 }} />
+        {/* ✅ Extra space so content clears the BottomNavBar */}
+        <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* ✅ Final piece of the puzzle: The global Bottom Nav Bar */}
+      <BottomNavBar navigation={navigation} activeScreen={isGuestMode ? "Family" : ""} />
     </View>
   );
 };
-
-// --- SUB-COMPONENTS ---
 
 const BulletPoint = ({ text }) => (
   <View style={styles.bulletRow}>
@@ -112,8 +124,6 @@ const TechTag = ({ label }) => (
     <Text style={styles.techTagText}>{label}</Text>
   </View>
 );
-
-// --- STYLES ---
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAF8' },
@@ -130,7 +140,9 @@ const styles = StyleSheet.create({
   backButton: { padding: 5 },
   backArrow: { color: '#FFF', fontSize: 30, fontWeight: 'bold' },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#FFF' },
-  scrollContent: { padding: 20 },
+
+  // ✅ Added paddingBottom to ensure scannability
+  scrollContent: { padding: 20, paddingBottom: 50 },
 
   section: { alignItems: 'center', marginBottom: 30 },
   logoCircle: {

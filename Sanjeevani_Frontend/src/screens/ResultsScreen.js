@@ -13,13 +13,20 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import BottomNavBar from '../components/BottomNavBar'; // ✅ Import the global navbar
 
 const { width } = Dimensions.get('window');
 const API_BASE_URL = 'http://10.0.2.2:8000/api/v1';
 const THEME_COLOR = '#2D7D46';
 
 const ResultsScreen = ({ route, navigation }) => {
-  const { symptoms, dosha, userName } = route.params || { symptoms: [], dosha: 'Unknown', userName: '' };
+  const { symptoms, dosha, userName, isGuest } = route.params || {
+      symptoms: [],
+      dosha: 'Unknown',
+      userName: '',
+      isGuest: false
+  };
+
   const [loading, setLoading] = useState(true);
   const [predictions, setPredictions] = useState([]);
 
@@ -31,7 +38,7 @@ const ResultsScreen = ({ route, navigation }) => {
     try {
       const response = await axios.post(`${API_BASE_URL}/predict/`, {
         symptom_names: symptoms,
-        username: userName, // Passing username for backend logging
+        username: userName,
         dosha: dosha
       }, { timeout: 15000 });
 
@@ -51,13 +58,14 @@ const ResultsScreen = ({ route, navigation }) => {
 
   const handleViewRemedies = async (item) => {
     try {
-      const historyData = {
-        name: item.name,
-        remedies: item.remedies || [],
-        diet: item.diet_plan // ✅ Save diet plan to local memory too
-      };
-
-      await AsyncStorage.setItem('last_diagnosis', JSON.stringify(historyData));
+      if (!isGuest) {
+          const historyData = {
+            name: item.name,
+            remedies: item.remedies || [],
+            diet: item.diet_plan
+          };
+          await AsyncStorage.setItem('last_diagnosis', JSON.stringify(historyData));
+      }
 
       navigation.navigate('AyurvedicRemedies', {
         remedies: item.remedies || [],
@@ -84,7 +92,9 @@ const ResultsScreen = ({ route, navigation }) => {
         <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
           <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Diagnosis Results</Text>
+        <Text style={styles.headerTitle}>
+            {isGuest ? "Family Diagnosis" : "Diagnosis Results"}
+        </Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -136,7 +146,6 @@ const ResultsScreen = ({ route, navigation }) => {
                 </View>
               </View>
 
-              {/* ✅ NEW: Diet Recommendation Section */}
               <View style={styles.dietCard}>
                 <View style={styles.dietHeaderRow}>
                   <Text style={styles.dietEmoji}>🥗</Text>
@@ -169,9 +178,14 @@ const ResultsScreen = ({ route, navigation }) => {
             </View>
           )}
 
-          <View style={{ height: 50 }} />
+          {/* ✅ Increased padding to ensure bottom cards aren't hidden behind the floating navbar */}
+          <View style={{ height: 120 }} />
         </ScrollView>
       )}
+
+      {/* ✅ Add the global Bottom Nav Bar here */}
+      <BottomNavBar navigation={navigation} activeScreen={isGuest ? "Family" : ""} />
+
     </View>
   );
 };
@@ -230,8 +244,6 @@ const styles = StyleSheet.create({
   confValue: { fontSize: 15, fontWeight: 'bold' },
   progressBarBg: { height: 10, backgroundColor: '#E0E0E0', borderRadius: 5, overflow: 'hidden' },
   progressBarFill: { height: '100%', borderRadius: 5 },
-
-  // ✅ NEW: Diet Plan Styles
   dietCard: {
     backgroundColor: '#F1F8E9',
     padding: 15,
@@ -244,7 +256,6 @@ const styles = StyleSheet.create({
   dietEmoji: { fontSize: 18, marginRight: 8 },
   dietTitle: { fontSize: 14, fontWeight: 'bold', color: '#2E7D32' },
   dietText: { fontSize: 13, color: '#444', lineHeight: 19 },
-
   metaRow: { flexDirection: 'row', alignItems: 'center' },
   matchTag: { fontSize: 12, color: '#777', fontWeight: '500' },
   detailsButton: {

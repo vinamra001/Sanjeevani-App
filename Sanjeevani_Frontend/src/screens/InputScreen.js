@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
   Platform,
   Alert
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import BottomNavBar from '../components/BottomNavBar'; // ✅ Import the global navbar
 
 const { width } = Dimensions.get('window');
 const THEME_COLOR = '#2D7D46';
@@ -27,9 +29,20 @@ const InputScreen = ({ navigation }) => {
   const [selectedSymptoms, setSelectedSymptoms] = useState([]);
   const [contentHeight, setContentHeight] = useState(1);
   const [visibleHeight, setVisibleHeight] = useState(0);
+  const [isGuestMode, setIsGuestMode] = useState(false);
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef(null);
+
+  useEffect(() => {
+    const checkGuestStatus = async () => {
+      const guestFlag = await AsyncStorage.getItem('isGuest');
+      if (guestFlag === 'true') {
+        setIsGuestMode(true);
+      }
+    };
+    checkGuestStatus();
+  }, []);
 
   const toggleSymptom = (name) => {
     if (selectedSymptoms.includes(name)) {
@@ -44,7 +57,10 @@ const InputScreen = ({ navigation }) => {
       Alert.alert("No Selection", "Please select at least one symptom to run the analysis.");
       return;
     }
-    navigation.navigate('Results', { symptoms: selectedSymptoms });
+    navigation.navigate('Results', {
+        symptoms: selectedSymptoms,
+        isGuest: isGuestMode
+    });
   };
 
   const scrollIndicatorSize = visibleHeight > 0 ? (visibleHeight * visibleHeight) / contentHeight : 0;
@@ -61,13 +77,14 @@ const InputScreen = ({ navigation }) => {
     <View style={styles.mainContainer}>
       <StatusBar barStyle="light-content" backgroundColor={THEME_COLOR} />
 
-      {/* UNIFIED SOLID GREEN HEADER */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitle}>Symptom Selection</Text>
+            <Text style={styles.headerTitle}>
+                {isGuestMode ? "Family Member Symptoms" : "Symptom Selection"}
+            </Text>
             {selectedSymptoms.length > 0 && (
                 <Text style={styles.headerSubtitle}>{selectedSymptoms.length} Selected</Text>
             )}
@@ -91,7 +108,11 @@ const InputScreen = ({ navigation }) => {
             { useNativeDriver: false }
           )}
         >
-          <Text style={styles.subHeading}>Tap symptoms to begin your Ayurvedic diagnosis</Text>
+          <Text style={styles.subHeading}>
+              {isGuestMode
+                ? "Tap symptoms to analyze your family member's health."
+                : "Tap symptoms to begin your Ayurvedic diagnosis."}
+          </Text>
 
           {SYMPTOM_CATEGORIES.map((category) => (
             <View key={category.title} style={styles.catSection}>
@@ -115,10 +136,10 @@ const InputScreen = ({ navigation }) => {
               </View>
             </View>
           ))}
-          <View style={{ height: 160 }} />
+          {/* ✅ Increased blank space at the bottom so symptoms aren't hidden behind the two bottom bars */}
+          <View style={{ height: 200 }} />
         </ScrollView>
 
-        {/* CUSTOM SIDEBAR SCROLLBAR */}
         <View style={styles.scrollbarTrack}>
           <Animated.View
             style={[
@@ -132,7 +153,7 @@ const InputScreen = ({ navigation }) => {
         </View>
       </View>
 
-      {/* BOTTOM ACTION BUTTON */}
+      {/* ✅ Modified: Pushed this button up so it sits right on top of the navbar */}
       <View style={styles.bottomContainer}>
         <TouchableOpacity
           style={[styles.predictButton, selectedSymptoms.length === 0 && styles.disabledButton]}
@@ -142,6 +163,10 @@ const InputScreen = ({ navigation }) => {
           <Text style={styles.predictButtonText}>Run Ayurvedic Analysis</Text>
         </TouchableOpacity>
       </View>
+
+      {/* ✅ Add the global Bottom Nav Bar here */}
+      <BottomNavBar navigation={navigation} activeScreen={isGuestMode ? "Family" : ""} />
+
     </View>
   );
 };
@@ -193,15 +218,16 @@ const styles = StyleSheet.create({
   scrollbarTrack: { width: 4, backgroundColor: '#E0E0E0', borderRadius: 2, marginVertical: 20, marginRight: 2 },
   scrollbarThumb: { width: 4, backgroundColor: THEME_COLOR, borderRadius: 2, opacity: 0.5 },
 
+  // ✅ Modified: Set bottom to 85 so it stacks perfectly on top of the BottomNavBar!
   bottomContainer: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 85,
     width: width,
-    padding: 20,
+    padding: 15,
     backgroundColor: '#FFF',
     borderTopWidth: 1,
     borderTopColor: '#EEE',
-    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+    elevation: 5,
   },
   predictButton: { backgroundColor: THEME_COLOR, padding: 18, borderRadius: 15, alignItems: 'center', elevation: 4 },
   disabledButton: { backgroundColor: '#A5D6A7' },

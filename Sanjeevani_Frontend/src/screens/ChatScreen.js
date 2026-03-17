@@ -15,6 +15,7 @@ import {
 import Markdown from 'react-native-markdown-display';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import BottomNavBar from '../components/BottomNavBar'; // ✅ Import global navbar
 
 const { width } = Dimensions.get('window');
 const THEME_COLOR = '#2D7D46';
@@ -29,6 +30,7 @@ const ChatScreen = ({ navigation }) => {
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [userName, setUserName] = useState('');
+  const [isGuestMode, setIsGuestMode] = useState(false);
   const flatListRef = useRef();
 
   useEffect(() => {
@@ -36,6 +38,15 @@ const ChatScreen = ({ navigation }) => {
       try {
         const storedName = await AsyncStorage.getItem('userName');
         if (storedName) setUserName(storedName);
+
+        // ✅ Check if the user entered via the Family (Guest) button
+        const guestFlag = await AsyncStorage.getItem('isGuest');
+        if (guestFlag === 'true') {
+          setIsGuestMode(true);
+          setMessages([
+            { id: '1', text: 'Namaste! 🙏 I am Sanjeevani AI. I see you are in Family Mode. How can I assist with your family member\'s health today?', sender: 'ai' }
+          ]);
+        }
       } catch (e) {
         console.error("Session Error", e);
       }
@@ -54,9 +65,11 @@ const ChatScreen = ({ navigation }) => {
 
     try {
       // ✅ FIXED: Changed API_URL to API_BASE_URL and pointed to /chat/
+      // Pass a special flag to Django if in guest mode, so AI doesn't use the main user's Prakriti data!
       const response = await axios.post(`${API_BASE_URL}/chat/`, {
         message: userQuery,
-        username: userName
+        username: userName,
+        isGuest: isGuestMode
       }, {
         timeout: 25000, // Increased timeout for AI generation
         headers: { 'Content-Type': 'application/json' }
@@ -153,11 +166,14 @@ const ChatScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* ✅ Add the global Bottom Nav Bar here */}
+      <BottomNavBar navigation={navigation} activeScreen="Chat" />
+
     </View>
   );
 };
 
-// ... Styles remain the same
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F8FAF8' },
     header: {
@@ -173,7 +189,10 @@ const styles = StyleSheet.create({
     backButton: { padding: 5 },
     backArrow: { color: '#FFF', fontSize: 30, fontWeight: 'bold' },
     headerTitle: { color: '#FFF', fontSize: 20, fontWeight: 'bold' },
-    chatList: { padding: 15, paddingBottom: 20 },
+
+    // ✅ Increased paddingBottom to 100 so final chat messages aren't hidden behind the navbar
+    chatList: { padding: 15, paddingBottom: 100 },
+
     messageRow: { flexDirection: 'row', marginBottom: 15, alignItems: 'flex-end' },
     userRow: { justifyContent: 'flex-end' },
     aiRow: { justifyContent: 'flex-start' },
@@ -183,6 +202,8 @@ const styles = StyleSheet.create({
     aiBubble: { backgroundColor: '#FFFFFF', borderBottomLeftRadius: 2 },
     loadingArea: { flexDirection: 'row', alignItems: 'center', paddingLeft: 20, marginBottom: 15 },
     loadingText: { marginLeft: 10, fontSize: 13, color: '#666', fontStyle: 'italic' },
+
+    // ✅ Modified: Added paddingBottom 100 to push the input box above the absolute BottomNavBar
     inputWrapper: {
       flexDirection: 'row',
       padding: 12,
@@ -190,7 +211,7 @@ const styles = StyleSheet.create({
       borderTopWidth: 1,
       borderTopColor: '#EEE',
       alignItems: 'center',
-      paddingBottom: Platform.OS === 'ios' ? 30 : 15,
+      paddingBottom: Platform.OS === 'ios' ? 100 : 85,
     },
     input: { flex: 1, backgroundColor: '#F0F2F0', borderRadius: 25, paddingHorizontal: 18, paddingVertical: 10, fontSize: 15, color: '#333' },
     sendButton: { marginLeft: 10, backgroundColor: THEME_COLOR, paddingVertical: 12, paddingHorizontal: 22, borderRadius: 25 },
